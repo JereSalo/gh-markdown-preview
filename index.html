@@ -292,7 +292,11 @@ editor.addEventListener('input', function() {
   clearTimeout(debounceTimer);
   debounceTimer = setTimeout(function() {
     preview.innerHTML = render(editor.value);
-    syncPreviewToCaret();
+    // Only sync scroll if cursor is at the end (no real content after it)
+    var textAfterCaret = editor.value.substring(editor.selectionStart);
+    if (textAfterCaret.trim().length === 0) {
+      syncPreviewToCaret();
+    }
     setTimeout(function() { typing = false; }, 100);
   }, 50);
 });
