@@ -270,6 +270,9 @@ editor.addEventListener('input', function() {
   clearTimeout(debounceTimer);
   debounceTimer = setTimeout(function() {
     preview.innerHTML = render(editor.value);
+    // Sync preview scroll to editor after render
+    var ratio = editor.scrollTop / (editor.scrollHeight - editor.clientHeight || 1);
+    preview.scrollTop = ratio * (preview.scrollHeight - preview.clientHeight);
   }, 50);
 });
 
