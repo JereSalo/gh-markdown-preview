@@ -267,13 +267,18 @@ var editor = document.getElementById('editor');
 var preview = document.getElementById('preview');
 var debounceTimer;
 
+function syncPreviewToEditor() {
+  var maxScroll = editor.scrollHeight - editor.clientHeight;
+  if (maxScroll <= 0) return;
+  var ratio = editor.scrollTop / maxScroll;
+  preview.scrollTop = ratio * (preview.scrollHeight - preview.clientHeight);
+}
+
 editor.addEventListener('input', function() {
   clearTimeout(debounceTimer);
   debounceTimer = setTimeout(function() {
     preview.innerHTML = render(editor.value);
-    // Sync preview scroll to editor after render
-    var ratio = editor.scrollTop / (editor.scrollHeight - editor.clientHeight || 1);
-    preview.scrollTop = ratio * (preview.scrollHeight - preview.clientHeight);
+    syncPreviewToEditor();
   }, 50);
 });
 
@@ -288,23 +293,9 @@ editor.addEventListener('keydown', function(e) {
   }
 });
 
-// Synchronized scrolling
-var syncing = false;
-
+// Sync scroll: editor drives preview (one direction only to avoid feedback loops)
 editor.addEventListener('scroll', function() {
-  if (syncing) return;
-  syncing = true;
-  var ratio = editor.scrollTop / (editor.scrollHeight - editor.clientHeight || 1);
-  preview.scrollTop = ratio * (preview.scrollHeight - preview.clientHeight);
-  syncing = false;
-});
-
-preview.addEventListener('scroll', function() {
-  if (syncing) return;
-  syncing = true;
-  var ratio = preview.scrollTop / (preview.scrollHeight - preview.clientHeight || 1);
-  editor.scrollTop = ratio * (editor.scrollHeight - editor.clientHeight);
-  syncing = false;
+  syncPreviewToEditor();
 });
 
 function copyMarkdown() {
