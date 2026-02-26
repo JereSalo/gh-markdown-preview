@@ -267,18 +267,33 @@ var editor = document.getElementById('editor');
 var preview = document.getElementById('preview');
 var debounceTimer;
 
-function syncPreviewToEditor() {
+// Sync preview based on cursor position in the editor text
+function syncPreviewToCaret() {
+  var caretPos = editor.selectionStart || 0;
+  var textLen = editor.value.length || 1;
+  var ratio = caretPos / textLen;
+  var maxPreviewScroll = preview.scrollHeight - preview.clientHeight;
+  if (maxPreviewScroll <= 0) return;
+  preview.scrollTop = ratio * maxPreviewScroll;
+}
+
+// Sync preview based on editor scroll position (for manual scrolling)
+function syncPreviewToScroll() {
   var maxScroll = editor.scrollHeight - editor.clientHeight;
   if (maxScroll <= 0) return;
   var ratio = editor.scrollTop / maxScroll;
   preview.scrollTop = ratio * (preview.scrollHeight - preview.clientHeight);
 }
 
+var typing = false;
+
 editor.addEventListener('input', function() {
+  typing = true;
   clearTimeout(debounceTimer);
   debounceTimer = setTimeout(function() {
     preview.innerHTML = render(editor.value);
-    syncPreviewToEditor();
+    syncPreviewToCaret();
+    setTimeout(function() { typing = false; }, 100);
   }, 50);
 });
 
@@ -293,9 +308,9 @@ editor.addEventListener('keydown', function(e) {
   }
 });
 
-// Sync scroll: editor drives preview (one direction only to avoid feedback loops)
+// Manual scroll sync (only when not typing, to avoid fighting with caret sync)
 editor.addEventListener('scroll', function() {
-  syncPreviewToEditor();
+  if (!typing) syncPreviewToScroll();
 });
 
 function copyMarkdown() {
