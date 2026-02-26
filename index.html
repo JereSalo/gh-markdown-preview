@@ -310,6 +310,54 @@ editor.addEventListener('keydown', function(e) {
     this.selectionStart = this.selectionEnd = start + 2;
     this.dispatchEvent(new Event('input'));
   }
+
+  if (e.key === 'Enter') {
+    var start = this.selectionStart;
+    var before = this.value.substring(0, start);
+    var after = this.value.substring(this.selectionEnd);
+    // Find the current line
+    var lineStart = before.lastIndexOf('\n') + 1;
+    var line = before.substring(lineStart);
+
+    // Match list patterns: "  - ", "- ", "* ", "1. ", "- [ ] ", "- [x] ", etc.
+    var match = line.match(/^(\s*)([-*])\s(\[[ x]\]\s)?(.*)$/) ||
+                line.match(/^(\s*)(\d+)\.\s(.*)$/);
+
+    if (match) {
+      var indent = match[1];
+      // Check if the line is an empty bullet (no content after the prefix)
+      var isCheckbox = line.match(/^(\s*)([-*])\s\[[ x]\]\s*$/);
+      var isEmptyBullet = line.match(/^(\s*)([-*])\s*$/) || line.match(/^(\s*)\d+\.\s*$/) || isCheckbox;
+
+      if (isEmptyBullet) {
+        // Remove the empty bullet line
+        e.preventDefault();
+        this.value = before.substring(0, lineStart) + after;
+        this.selectionStart = this.selectionEnd = lineStart;
+        this.dispatchEvent(new Event('input'));
+      } else {
+        e.preventDefault();
+        var prefix;
+        var bulletMatch = line.match(/^(\s*)([-*])\s(\[[ x]\]\s)?(.*)/);
+        var numMatch = line.match(/^(\s*)(\d+)\.\s(.*)/);
+
+        if (bulletMatch) {
+          prefix = indent + bulletMatch[2] + ' ';
+          if (bulletMatch[3]) {
+            // Continue with unchecked checkbox
+            prefix += '[ ] ';
+          }
+        } else if (numMatch) {
+          prefix = indent + (parseInt(numMatch[2]) + 1) + '. ';
+        }
+
+        var insertion = '\n' + prefix;
+        this.value = before + insertion + after;
+        this.selectionStart = this.selectionEnd = start + insertion.length;
+        this.dispatchEvent(new Event('input'));
+      }
+    }
+  }
 });
 
 // Manual scroll sync (only when not typing, to avoid fighting with caret sync)
