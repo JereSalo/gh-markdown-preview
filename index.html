@@ -283,6 +283,25 @@ editor.addEventListener('keydown', function(e) {
   }
 });
 
+// Synchronized scrolling
+var syncing = false;
+
+editor.addEventListener('scroll', function() {
+  if (syncing) return;
+  syncing = true;
+  var ratio = editor.scrollTop / (editor.scrollHeight - editor.clientHeight || 1);
+  preview.scrollTop = ratio * (preview.scrollHeight - preview.clientHeight);
+  syncing = false;
+});
+
+preview.addEventListener('scroll', function() {
+  if (syncing) return;
+  syncing = true;
+  var ratio = preview.scrollTop / (preview.scrollHeight - preview.clientHeight || 1);
+  editor.scrollTop = ratio * (editor.scrollHeight - editor.clientHeight);
+  syncing = false;
+});
+
 function copyMarkdown() {
   navigator.clipboard.writeText(editor.value).then(function() {
     flashButton('copyBtn', 'Copied!');
