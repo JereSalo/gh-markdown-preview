@@ -185,6 +185,7 @@
   <div class="header-actions">
     <button id="copyBtn" onclick="copyMarkdown()">Copy Markdown</button>
     <button id="copyHtmlBtn" onclick="copyHtml()">Copy HTML</button>
+    <button id="resetBtn" onclick="resetContent()" style="display:none">Reset</button>
   </div>
 </header>
 
@@ -392,11 +393,13 @@ function flashButton(id, text) {
 // Load content from URL hash (works over https://)
 // Also supports INITIAL_CONTENT variable (injected by gh-preview.sh for local use)
 function loadInitialContent() {
+  var fromHash = false;
   if (typeof INITIAL_CONTENT === 'string' && INITIAL_CONTENT) {
     editor.value = INITIAL_CONTENT;
   } else if (window.location.hash.length > 1) {
     try {
       editor.value = decodeURIComponent(window.location.hash.substring(1));
+      fromHash = true;
     } catch(e) {}
   } else {
     try {
@@ -407,10 +410,34 @@ function loadInitialContent() {
   if (editor.value) {
     preview.innerHTML = render(editor.value);
   }
+  // Save original content for reset, and show the reset button
+  if (fromHash && editor.value) {
+    try {
+      localStorage.setItem('gh-preview-original', editor.value);
+      document.getElementById('resetBtn').style.display = '';
+    } catch(e) {}
+  } else {
+    try {
+      if (localStorage.getItem('gh-preview-original')) {
+        document.getElementById('resetBtn').style.display = '';
+      }
+    } catch(e) {}
+  }
   // Clear hash after loading so refreshes use localStorage instead
   if (window.location.hash.length > 1) {
     history.replaceState(null, '', window.location.pathname);
   }
+}
+
+function resetContent() {
+  try {
+    var original = localStorage.getItem('gh-preview-original');
+    if (original) {
+      editor.value = original;
+      preview.innerHTML = render(editor.value);
+      localStorage.setItem('gh-preview-content', original);
+    }
+  } catch(e) {}
 }
 
 loadInitialContent();
