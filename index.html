@@ -292,6 +292,7 @@ editor.addEventListener('input', function() {
   clearTimeout(debounceTimer);
   debounceTimer = setTimeout(function() {
     preview.innerHTML = render(editor.value);
+    try { localStorage.setItem('gh-preview-content', editor.value); } catch(e) {}
     // Only sync scroll if cursor is at the end (no real content after it)
     var textAfterCaret = editor.value.substring(editor.selectionStart);
     if (textAfterCaret.trim().length === 0) {
@@ -397,9 +398,18 @@ function loadInitialContent() {
     try {
       editor.value = decodeURIComponent(window.location.hash.substring(1));
     } catch(e) {}
+  } else {
+    try {
+      var saved = localStorage.getItem('gh-preview-content');
+      if (saved) editor.value = saved;
+    } catch(e) {}
   }
   if (editor.value) {
     preview.innerHTML = render(editor.value);
+  }
+  // Clear hash after loading so refreshes use localStorage instead
+  if (window.location.hash.length > 1) {
+    history.replaceState(null, '', window.location.pathname);
   }
 }
 
