@@ -303,14 +303,30 @@ editor.addEventListener('input', function() {
   }, 50);
 });
 
+// Insert text at cursor using execCommand to preserve undo history.
+// Falls back to direct value assignment if execCommand is unavailable.
+function insertAtCursor(textarea, text) {
+  textarea.focus();
+  if (document.execCommand('insertText', false, text)) return;
+  // Fallback
+  var start = textarea.selectionStart;
+  textarea.value = textarea.value.substring(0, start) + text + textarea.value.substring(textarea.selectionEnd);
+  textarea.selectionStart = textarea.selectionEnd = start + text.length;
+  textarea.dispatchEvent(new Event('input'));
+}
+
+// Select a range and replace it with text, preserving undo history.
+function replaceRange(textarea, start, end, text) {
+  textarea.focus();
+  textarea.selectionStart = start;
+  textarea.selectionEnd = end;
+  insertAtCursor(textarea, text);
+}
+
 editor.addEventListener('keydown', function(e) {
   if (e.key === 'Tab') {
     e.preventDefault();
-    var start = this.selectionStart;
-    var end = this.selectionEnd;
-    this.value = this.value.substring(0, start) + '  ' + this.value.substring(end);
-    this.selectionStart = this.selectionEnd = start + 2;
-    this.dispatchEvent(new Event('input'));
+    insertAtCursor(this, '  ');
   }
 
   if (e.key === 'Enter') {
@@ -334,9 +350,7 @@ editor.addEventListener('keydown', function(e) {
       if (isEmptyBullet) {
         // Remove the empty bullet line
         e.preventDefault();
-        this.value = before.substring(0, lineStart) + after;
-        this.selectionStart = this.selectionEnd = lineStart;
-        this.dispatchEvent(new Event('input'));
+        replaceRange(this, lineStart, this.selectionEnd, '');
       } else {
         e.preventDefault();
         var prefix;
@@ -353,10 +367,7 @@ editor.addEventListener('keydown', function(e) {
           prefix = indent + (parseInt(numMatch[2]) + 1) + '. ';
         }
 
-        var insertion = '\n' + prefix;
-        this.value = before + insertion + after;
-        this.selectionStart = this.selectionEnd = start + insertion.length;
-        this.dispatchEvent(new Event('input'));
+        insertAtCursor(this, '\n' + prefix);
       }
     }
   }
